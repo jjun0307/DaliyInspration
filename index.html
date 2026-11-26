@@ -1,0 +1,499 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Daily</title>
+<meta name="theme-color" content="#F2F0EC">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Daily">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans+KR:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #F2F0EC; --ink: #141414; --label: #5F5C57; --line: #DAD7D1;
+    --field: #FFFFFF; --border: #C9C5BE; --done: #6E6B66; --off: #8A8781;
+    --sans: 'IBM Plex Sans KR', system-ui, -apple-system, sans-serif;
+    --mono: 'IBM Plex Mono', ui-monospace, monospace;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; background: var(--bg); color: var(--ink); font-family: var(--sans); -webkit-text-size-adjust: 100%; }
+  body { min-height: 100vh; }
+  main {
+    max-width: 520px; margin: 0 auto;
+    padding: max(24px, env(safe-area-inset-top)) 22px max(32px, env(safe-area-inset-bottom));
+    display: flex; flex-direction: column; gap: 26px;
+  }
+  [hidden] { display: none !important; }
+  .label { margin: 0; font-family: var(--mono); font-size: 11px; font-weight: 400; letter-spacing: 0.08em; color: var(--label); }
+  h1 { margin: 4px 0 0; font-size: 22px; line-height: 30px; font-weight: 600; }
+  .row-head { display: flex; justify-content: space-between; align-items: baseline; }
+  .count { font-family: var(--mono); font-size: 13px; font-weight: 500; }
+  #blocks { display: flex; flex-direction: column; gap: 26px; }
+
+  ul.todos { list-style: none; margin: 8px 0 0; padding: 0; }
+  ul.todos li { height: 48px; display: flex; align-items: center; gap: 4px; border-top: 1px solid var(--line); }
+  ul.todos li:last-child { border-bottom: 1px solid var(--line); }
+  .icon-btn { width: 44px; height: 44px; padding: 0; border: 0; background: transparent; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; color: var(--ink); border-radius: 10px; }
+  .icon-btn:disabled { cursor: default; opacity: 0.3; }
+  .todos .check { margin-left: -12px; }
+  .todos .del { margin-right: -12px; color: var(--done); }
+  .todos .text { flex: 1; min-width: 0; font-size: 15px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .todos li.done .text { color: var(--done); text-decoration: line-through; }
+  .empty { padding: 14px 0; color: var(--label); font-size: 14px; border-top: 1px solid var(--line); }
+
+  .add { display: flex; gap: 8px; margin-top: 10px; }
+  input[type=text], input[type=url], input[type=password], textarea {
+    width: 100%; min-width: 0; height: 44px; padding: 0 14px;
+    border: 1px solid var(--border); border-radius: 12px; background: var(--field);
+    font-family: var(--sans); font-size: 16px; color: var(--ink);
+  }
+  input::placeholder, textarea::placeholder { color: #77746E; }
+  input:disabled { background: #E9E7E2; }
+  .btn { height: 44px; padding: 0 18px; border: 0; border-radius: 12px; background: var(--ink); color: var(--bg); font-family: var(--sans); font-size: 15px; font-weight: 500; cursor: pointer; white-space: nowrap; }
+  .btn:disabled { background: var(--off); cursor: default; }
+  .btn.ghost { background: transparent; color: var(--ink); border: 1px solid var(--border); }
+  :focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+
+  .meals { display: flex; flex-direction: column; gap: 8px; margin-top: 8px; }
+  .meal { display: flex; align-items: center; gap: 10px; }
+  .meal label { width: 34px; flex: none; font-size: 14px; color: var(--label); }
+  textarea.mind {
+    display: block; height: 96px; margin-top: 8px; padding: 12px 14px; border: 0; resize: none;
+    background: var(--ink); color: var(--bg); font-size: 17px; line-height: 1.4; font-weight: 600;
+  }
+  textarea.mind::placeholder { color: #A8A49D; }
+  .hint { margin: 6px 0 0; font-size: 13px; color: var(--label); }
+
+  ol.order { list-style: none; margin: 8px 0 0; padding: 0; }
+  ol.order li { height: 48px; display: flex; align-items: center; gap: 12px; border-top: 1px solid var(--line); }
+  ol.order li:last-child { border-bottom: 1px solid var(--line); }
+  ol.order .num { width: 18px; font-family: var(--mono); font-size: 13px; color: var(--label); }
+  ol.order .name { flex: 1; font-size: 15px; }
+  ol.order .moves { display: flex; margin-right: -10px; }
+
+  .status { font-family: var(--mono); font-size: 11px; letter-spacing: 0.06em; color: var(--label); text-align: center; margin: 0; }
+  .status.err { color: #8A2A1A; }
+  .linkish { background: none; border: 0; padding: 12px; margin: -12px auto 0; display: block; font-family: var(--sans); font-size: 13px; color: var(--label); text-decoration: underline; cursor: pointer; }
+
+  .setup { display: flex; flex-direction: column; gap: 14px; }
+  .setup label { display: block; font-size: 13px; color: var(--label); margin-bottom: 6px; }
+  .setup p { margin: 0; font-size: 14px; line-height: 1.6; color: var(--label); }
+  .setup .actions { display: flex; gap: 8px; }
+  .setup .actions .btn { flex: 1; }
+  .msg { min-height: 20px; font-size: 14px; color: #8A2A1A; margin: 0; }
+</style>
+</head>
+<body>
+<main>
+
+  <!-- 첫 실행: 연결 설정 -->
+  <section id="setup" class="setup" aria-labelledby="setup-title" hidden>
+    <div>
+      <p class="label">DAILY · SETUP</p>
+      <h1 id="setup-title">연결 설정</h1>
+    </div>
+    <p>Supabase 프로젝트 주소와 공개 키, SQL에 넣은 비밀키를 입력하세요. 이 기기에만 저장돼요.</p>
+    <form id="setup-form" novalidate>
+      <div style="display:flex;flex-direction:column;gap:14px">
+        <div><label for="cfg-url">Project URL</label><input id="cfg-url" type="url" inputmode="url" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="https://xxxx.supabase.co" required></div>
+        <div><label for="cfg-key">Publishable key</label><input id="cfg-key" type="text" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="sb_publishable_…" required></div>
+        <div><label for="cfg-secret">비밀키</label><input id="cfg-secret" type="password" autocomplete="off" placeholder="SQL에 넣은 문구" required></div>
+        <p id="setup-msg" class="msg" role="alert"></p>
+        <div class="actions">
+          <button id="setup-cancel" class="btn ghost" type="button" hidden>취소</button>
+          <button id="setup-submit" class="btn" type="submit">연결하기</button>
+        </div>
+      </div>
+    </form>
+  </section>
+
+  <!-- 편집 화면 -->
+  <div id="editor" hidden style="display:flex;flex-direction:column;gap:26px">
+    <header>
+      <p class="label">DAILY</p>
+      <h1 id="today"></h1>
+    </header>
+
+    <div id="blocks">
+      <section data-block="todo" aria-labelledby="todo-h">
+        <div class="row-head"><h2 id="todo-h" class="label">TO DO</h2><span id="todo-count" class="count" aria-live="polite"></span></div>
+        <ul id="todo-list" class="todos"></ul>
+        <form id="add-form" class="add">
+          <label for="new-todo" style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)">새 할 일</label>
+          <input id="new-todo" type="text" maxlength="60" autocomplete="off" enterkeyhint="done">
+          <button id="add-btn" class="btn" type="submit">추가</button>
+        </form>
+      </section>
+
+      <section data-block="meals" aria-labelledby="meals-h">
+        <h2 id="meals-h" class="label">MEALS</h2>
+        <div class="meals">
+          <div class="meal"><label for="meal-am">아침</label><input id="meal-am" data-meal="am" type="text" maxlength="40" placeholder="아침 메뉴" autocomplete="off"></div>
+          <div class="meal"><label for="meal-pm">점심</label><input id="meal-pm" data-meal="pm" type="text" maxlength="40" placeholder="점심 메뉴" autocomplete="off"></div>
+          <div class="meal"><label for="meal-eve">저녁</label><input id="meal-eve" data-meal="eve" type="text" maxlength="40" placeholder="저녁 메뉴" autocomplete="off"></div>
+        </div>
+      </section>
+
+      <section data-block="mindset" aria-labelledby="mind-h">
+        <label id="mind-h" for="mindset" class="label" style="display:block">MINDSET</label>
+        <textarea id="mindset" class="mind" maxlength="200" placeholder="오늘 붙잡을 한 문장"></textarea>
+      </section>
+    </div>
+
+    <section aria-labelledby="order-h">
+      <h2 id="order-h" class="label">LOCK SCREEN ORDER</h2>
+      <ol id="order" class="order"></ol>
+      <p class="hint">위에서부터 이 순서로 잠금화면에 그려져요.</p>
+    </section>
+
+    <button id="lock-btn" class="btn" type="button" hidden>잠금화면에 반영</button>
+
+    <div>
+      <p id="status" class="status" role="status"></p>
+      <button id="reset-btn" class="linkish" type="button">연결 설정 바꾸기</button>
+    </div>
+  </div>
+
+</main>
+
+<script>
+(() => {
+  'use strict';
+
+  const CFG_KEY = 'daily.config.v1';
+  const CACHE_KEY = 'daily.cache.v1';
+  const SHORTCUT_NAME = 'Daily 잠금화면';
+  const MAX_TODOS = 5;
+  const BLOCK_NAMES = { todo: '할 일', meals: '식단', mindset: '마인드셋' };
+  const DEFAULT_LAYOUT = ['todo', 'meals', 'mindset'];
+
+  const $ = (id) => document.getElementById(id);
+  const svg = {
+    open: '<svg width="20" height="20" viewBox="0 0 20 20" aria-hidden="true"><circle cx="10" cy="10" r="9.1" fill="none" stroke="currentColor" stroke-width="1.6"/></svg>',
+    done: '<svg width="20" height="20" viewBox="0 0 20 20" aria-hidden="true"><circle cx="10" cy="10" r="10" fill="currentColor"/><path d="M6 10.4l2.6 2.6L14 7.6" fill="none" stroke="#F2F0EC" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+    del: '<svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M3 3l8 8M11 3l-8 8"/></svg>',
+    up: '<svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M8 13V3M3.5 7.5L8 3l4.5 4.5"/></svg>',
+    down: '<svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3v10M3.5 8.5L8 13l4.5-4.5"/></svg>'
+  };
+
+  // ── 저장소 ──────────────────────────────
+  const readLS = (k) => { try { return JSON.parse(localStorage.getItem(k)); } catch (e) { return null; } };
+  const writeLS = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) { /* 저장 공간 없음: 무시 */ } };
+
+  function normalize(d) {
+    d = d && typeof d === 'object' ? d : {};
+    const todos = Array.isArray(d.todos) ? d.todos : [];
+    const meals = d.meals && typeof d.meals === 'object' ? d.meals : {};
+    let layout = Array.isArray(d.layout) ? d.layout.filter((k) => k in BLOCK_NAMES) : [];
+    if (layout.length !== 3 || new Set(layout).size !== 3) layout = DEFAULT_LAYOUT.slice();
+    return {
+      todos: todos
+        .filter((t) => t && typeof t.t === 'string' && t.t.trim())
+        .slice(0, MAX_TODOS)
+        .map((t) => ({ t: t.t.trim().slice(0, 60), d: !!t.d })),
+      meals: { am: String(meals.am || ''), pm: String(meals.pm || ''), eve: String(meals.eve || '') },
+      mindset: typeof d.mindset === 'string' ? d.mindset : '',
+      layout
+    };
+  }
+
+  let cfg = readLS(CFG_KEY);
+  let data = normalize(readLS(CACHE_KEY));
+  let version = 0;        // 로컬에서 바뀔 때마다 +1
+  let savedVersion = 0;   // 서버에 저장된 마지막 버전
+  let saving = false;
+  let saveTimer = null;
+  let retryTimer = null;
+
+  const isDirty = () => version !== savedVersion;
+
+  // ── Supabase RPC ────────────────────────
+  async function rpc(fn, body, c) {
+    c = c || cfg;
+    const res = await fetch(c.url.replace(/\/+$/, '') + '/rest/v1/rpc/' + fn, {
+      method: 'POST',
+      headers: { 'apikey': c.key, 'Content-Type': 'application/json' },
+      body: JSON.stringify(body)
+    });
+    const raw = await res.text();
+    let json = null;
+    try { json = raw ? JSON.parse(raw) : null; } catch (e) { /* 본문이 JSON이 아님 */ }
+    if (!res.ok) {
+      const err = new Error((json && json.message) || ('HTTP ' + res.status));
+      err.status = res.status;
+      err.code = json && json.code;
+      throw err;
+    }
+    return json;
+  }
+
+  const isAuthError = (e) => e && (e.code === '42501' || e.status === 401 || e.status === 403 || /unauthorized/i.test(e.message));
+  const hhmm = (d) => (d || new Date()).toTimeString().slice(0, 5);
+
+  function setStatus(text, isError) {
+    const el = $('status');
+    el.textContent = text;
+    el.classList.toggle('err', !!isError);
+  }
+
+  // ── 저장 / 불러오기 ─────────────────────
+  function changed() {
+    version += 1;
+    writeLS(CACHE_KEY, data);
+    setStatus('저장 중…');
+    clearTimeout(saveTimer);
+    saveTimer = setTimeout(save, 700);
+  }
+
+  async function save() {
+    clearTimeout(saveTimer);
+    clearTimeout(retryTimer);
+    if (!cfg) return;
+    if (saving) { saveTimer = setTimeout(save, 400); return; }
+    if (!isDirty()) return;
+    saving = true;
+    const v = version;
+    const snap = JSON.parse(JSON.stringify(data));
+    try {
+      await rpc('daily_save', {
+        p_key: cfg.secret,
+        p_todos: snap.todos,
+        p_meals: snap.meals,
+        p_mindset: snap.mindset,
+        p_layout: snap.layout
+      });
+      if (v > savedVersion) savedVersion = v;
+      if (!isDirty()) setStatus('SYNCED · ' + hhmm());
+    } catch (e) {
+      if (isAuthError(e)) {
+        setStatus('비밀키가 바뀌었어요 · 연결 설정을 다시 해 주세요', true);
+      } else {
+        setStatus(navigator.onLine ? '저장 실패 · 잠시 후 다시 시도' : '오프라인 · 연결되면 저장돼요', true);
+        retryTimer = setTimeout(save, 5000);
+      }
+    } finally {
+      saving = false;
+    }
+  }
+
+  async function pull() {
+    if (!cfg || isDirty() || saving) return;
+    const v = version;
+    try {
+      const res = await rpc('daily_get', { p_key: cfg.secret });
+      if (version !== v || isDirty()) return; // 그 사이 편집이 생겼으면 덮어쓰지 않음
+      data = normalize(res);
+      writeLS(CACHE_KEY, data);
+      render(true);
+      setStatus('SYNCED · ' + hhmm());
+    } catch (e) {
+      if (isAuthError(e)) setStatus('비밀키가 맞지 않아요 · 연결 설정을 확인해 주세요', true);
+      else setStatus(navigator.onLine ? '불러오기 실패' : '오프라인 · 저장된 내용을 보여주는 중', true);
+    }
+  }
+
+  // ── 그리기 ──────────────────────────────
+  function button(cls, label, html, onClick, disabled) {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'icon-btn ' + cls;
+    b.setAttribute('aria-label', label);
+    b.innerHTML = html;
+    b.disabled = !!disabled;
+    b.addEventListener('click', onClick);
+    return b;
+  }
+
+  function renderTodos() {
+    const list = $('todo-list');
+    list.textContent = '';
+    if (data.todos.length === 0) {
+      const li = document.createElement('li');
+      li.className = 'empty';
+      li.textContent = '할 일을 추가해 보세요.';
+      list.appendChild(li);
+    }
+    data.todos.forEach((todo, i) => {
+      const li = document.createElement('li');
+      if (todo.d) li.classList.add('done');
+      li.appendChild(button('check', todo.d ? todo.t + ' 완료 취소' : todo.t + ' 완료로 표시', todo.d ? svg.done : svg.open, () => {
+        data.todos[i].d = !data.todos[i].d;
+        changed(); renderTodos();
+      }));
+      li.lastChild.setAttribute('aria-pressed', String(todo.d));
+      const span = document.createElement('span');
+      span.className = 'text';
+      span.textContent = todo.t;
+      li.appendChild(span);
+      li.appendChild(button('del', todo.t + ' 삭제', svg.del, () => {
+        data.todos.splice(i, 1);
+        changed(); renderTodos();
+      }));
+      list.appendChild(li);
+    });
+
+    const done = data.todos.filter((t) => t.d).length;
+    $('todo-count').textContent = done + ' / ' + data.todos.length;
+    const full = data.todos.length >= MAX_TODOS;
+    $('new-todo').disabled = full;
+    $('add-btn').disabled = full;
+    $('new-todo').placeholder = full ? '5개 꽉 찼어요 · 하나 지우면 추가' : '할 일 추가 (최대 5개)';
+  }
+
+  function renderFields(force) {
+    // 입력 중인 칸은 건드리지 않아 커서가 튀지 않게 함 (서버에서 새로 받아온 경우는 예외)
+    document.querySelectorAll('[data-meal]').forEach((el) => {
+      if (force || document.activeElement !== el) el.value = data.meals[el.dataset.meal];
+    });
+    const mind = $('mindset');
+    if (force || document.activeElement !== mind) mind.value = data.mindset;
+  }
+
+  function renderOrder() {
+    const blocks = $('blocks');
+    data.layout.forEach((key) => blocks.appendChild(blocks.querySelector('[data-block="' + key + '"]')));
+
+    const ol = $('order');
+    ol.textContent = '';
+    data.layout.forEach((key, i) => {
+      const li = document.createElement('li');
+      const num = document.createElement('span');
+      num.className = 'num';
+      num.textContent = String(i + 1);
+      const name = document.createElement('span');
+      name.className = 'name';
+      name.textContent = BLOCK_NAMES[key];
+      const moves = document.createElement('span');
+      moves.className = 'moves';
+      moves.appendChild(button('', BLOCK_NAMES[key] + ' 위로', svg.up, () => move(i, -1), i === 0));
+      moves.appendChild(button('', BLOCK_NAMES[key] + ' 아래로', svg.down, () => move(i, 1), i === data.layout.length - 1));
+      li.append(num, name, moves);
+      ol.appendChild(li);
+    });
+  }
+
+  function move(i, dir) {
+    const j = i + dir;
+    if (j < 0 || j >= data.layout.length) return;
+    const l = data.layout;
+    [l[i], l[j]] = [l[j], l[i]];
+    changed();
+    renderOrder();
+    // 옮긴 항목의 같은 방향 버튼에 포커스를 유지
+    const btns = $('order').children[j].querySelectorAll('button');
+    const target = dir < 0 ? btns[0] : btns[1];
+    (target.disabled ? btns[dir < 0 ? 1 : 0] : target).focus();
+  }
+
+  function render(force) {
+    $('today').textContent = new Intl.DateTimeFormat('ko-KR', { month: 'long', day: 'numeric', weekday: 'long' }).format(new Date());
+    renderTodos();
+    renderFields(force);
+    renderOrder();
+  }
+
+  // ── 화면 전환 ───────────────────────────
+  function showEditor() {
+    $('setup').hidden = true;
+    $('editor').hidden = false;
+    render();
+  }
+
+  function showSetup() {
+    $('editor').hidden = true;
+    $('setup').hidden = false;
+    $('setup-msg').textContent = '';
+    $('cfg-url').value = cfg ? cfg.url : '';
+    $('cfg-key').value = cfg ? cfg.key : '';
+    $('cfg-secret').value = '';
+    $('setup-cancel').hidden = !cfg;
+    $('cfg-url').focus();
+  }
+
+  // ── 이벤트 ──────────────────────────────
+  $('add-form').addEventListener('submit', (e) => {
+    e.preventDefault();
+    const input = $('new-todo');
+    const text = input.value.trim();
+    if (!text || data.todos.length >= MAX_TODOS) return;
+    data.todos.push({ t: text.slice(0, 60), d: false });
+    input.value = '';
+    changed();
+    renderTodos();
+    if (!input.disabled) input.focus();
+  });
+
+  document.querySelectorAll('[data-meal]').forEach((el) => {
+    el.addEventListener('input', () => { data.meals[el.dataset.meal] = el.value; changed(); });
+  });
+  $('mindset').addEventListener('input', (e) => { data.mindset = e.target.value; changed(); });
+
+  $('lock-btn').hidden = !/iPhone|iPad|iPod/.test(navigator.userAgent);
+  $('lock-btn').addEventListener('click', async () => {
+    if (isDirty()) await save();
+    window.location.href = 'shortcuts://run-shortcut?name=' + encodeURIComponent(SHORTCUT_NAME);
+  });
+
+  $('reset-btn').addEventListener('click', showSetup);
+  $('setup-cancel').addEventListener('click', showEditor);
+
+  $('setup-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const next = {
+      url: $('cfg-url').value.trim(),
+      key: $('cfg-key').value.trim(),
+      secret: $('cfg-secret').value
+    };
+    const msg = $('setup-msg');
+    if (!/^https:\/\/.+/.test(next.url) || !next.key || !next.secret) {
+      msg.textContent = '세 칸을 모두 채워 주세요. 주소는 https:// 로 시작해요.';
+      return;
+    }
+    $('setup-submit').disabled = true;
+    msg.textContent = '';
+    try {
+      const res = await rpc('daily_get', { p_key: next.secret }, next);
+      cfg = next;
+      writeLS(CFG_KEY, cfg);
+      data = normalize(res);
+      writeLS(CACHE_KEY, data);
+      version = savedVersion = 0;
+      showEditor();
+      setStatus('SYNCED · ' + hhmm());
+    } catch (err) {
+      msg.textContent = isAuthError(err)
+        ? '비밀키가 맞지 않아요.'
+        : '연결하지 못했어요. 주소·키를 확인하고, SQL을 실행했는지 봐 주세요. (' + err.message + ')';
+    } finally {
+      $('setup-submit').disabled = false;
+    }
+  });
+
+  // 다른 기기에서 바꾼 내용 가져오기
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible') pull();
+    else if (isDirty()) save();
+  });
+  window.addEventListener('focus', pull);
+  window.addEventListener('online', () => (isDirty() ? save() : pull()));
+  window.addEventListener('pagehide', () => { if (isDirty()) save(); });
+
+  // ── 시작 ────────────────────────────────
+  if (cfg && cfg.url && cfg.key && cfg.secret) {
+    showEditor();
+    setStatus('불러오는 중…');
+    pull();
+  } else {
+    cfg = null;
+    showSetup();
+  }
+})();
+</script>
+</body>
+</html>
